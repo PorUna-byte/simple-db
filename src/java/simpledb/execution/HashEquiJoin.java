@@ -5,6 +5,7 @@ import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -58,7 +59,7 @@ public class HashEquiJoin extends Operator {
     final Map<Object, List<Tuple>> map = new HashMap<>();
     public final static int MAP_SIZE = 20000;
 
-    private boolean loadMap() throws DbException, TransactionAbortedException {
+    private boolean loadMap() throws DbException, TransactionAbortedException{
         int cnt = 0;
         map.clear();
         while (child1.hasNext()) {
@@ -73,7 +74,7 @@ public class HashEquiJoin extends Operator {
     }
 
     public void open() throws DbException, NoSuchElementException,
-            TransactionAbortedException {
+            TransactionAbortedException{
         child1.open();
         child2.open();
         loadMap();
@@ -131,7 +132,7 @@ public class HashEquiJoin extends Operator {
 
     }
 
-    protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+    protected Tuple fetchNext() throws TransactionAbortedException, DbException{
         if (listIt != null && listIt.hasNext()) {
             return processList();
         }

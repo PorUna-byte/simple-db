@@ -5,6 +5,7 @@ import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 
+import java.io.IOException;
 import java.util.NoSuchElementException;
 
 /**
@@ -16,7 +17,7 @@ public abstract class Operator implements OpIterator {
 
     private static final long serialVersionUID = 1L;
 
-    public boolean hasNext() throws DbException, TransactionAbortedException {
+    public boolean hasNext() throws DbException, TransactionAbortedException{
         if (!this.open)
             throw new IllegalStateException("Operator not yet open");
         
@@ -26,7 +27,7 @@ public abstract class Operator implements OpIterator {
     }
 
     public Tuple next() throws DbException, TransactionAbortedException,
-            NoSuchElementException {
+            NoSuchElementException{
         if (next == null) {
             next = fetchNext();
             if (next == null)
@@ -63,7 +64,7 @@ public abstract class Operator implements OpIterator {
     private boolean open = false;
     private int estimatedCardinality = 0;
 
-    public void open() throws DbException, TransactionAbortedException {
+    public void open() throws DbException, TransactionAbortedException{
         this.open = true;
     }
 

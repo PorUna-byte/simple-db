@@ -363,6 +363,7 @@ public class BTreeInternalPage extends BTreePage {
 			for(int i = rid.getTupleNumber() - 1; i >= 0; i--) {
 				if(isSlotUsed(i)) {
 					children[i] = children[rid.getTupleNumber()];
+					children[rid.getTupleNumber()]=-1;
 					markSlotUsed(rid.getTupleNumber(), false);
 					break;
 				}	

@@ -2,6 +2,7 @@ package simpledb.common;
 
 import simpledb.storage.BufferPool;
 import simpledb.storage.LogFile;
+import simpledb.transaction.LockManager;
 
 import java.io.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -20,7 +21,7 @@ public class Database {
     private static final AtomicReference<Database> _instance = new AtomicReference<>(new Database());
     private final Catalog _catalog;
     private final BufferPool _bufferpool;
-
+    private final LockManager _lockmanager;
     private final static String LOGFILENAME = "log";
     private final LogFile _logfile;
 
@@ -35,6 +36,7 @@ public class Database {
             System.exit(1);
         }
         _logfile = tmp;
+        _lockmanager = new LockManager();
         // startControllerThread();
     }
 
@@ -51,6 +53,11 @@ public class Database {
     /** Return the catalog of the static Database instance */
     public static Catalog getCatalog() {
         return _instance.get()._catalog;
+    }
+
+    /** Return the lockmanager of the static Database instance */
+    public static LockManager getLockManager() {
+        return _instance.get()._lockmanager;
     }
 
     /**

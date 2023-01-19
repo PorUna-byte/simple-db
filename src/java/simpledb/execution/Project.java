@@ -6,6 +6,7 @@ import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -49,7 +50,7 @@ public class Project extends Operator {
     }
 
     public void open() throws DbException, NoSuchElementException,
-            TransactionAbortedException {
+            TransactionAbortedException{
         child.open();
         super.open();
     }
@@ -70,7 +71,7 @@ public class Project extends Operator {
      * @return The next tuple, or null if there are no more tuples
      */
     protected Tuple fetchNext() throws NoSuchElementException,
-            TransactionAbortedException, DbException {
+            TransactionAbortedException, DbException{
         if (!child.hasNext()) return null;
         Tuple t = child.next();
         Tuple newTuple = new Tuple(td);

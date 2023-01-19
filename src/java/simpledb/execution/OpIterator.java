@@ -4,6 +4,7 @@ import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -21,7 +22,7 @@ public interface OpIterator extends Serializable{
    * @throws DbException when there are problems opening/accessing the database.
    */
   void open()
-      throws DbException, TransactionAbortedException;
+          throws DbException, TransactionAbortedException;
 
   /** Returns true if the iterator has more tuples.
    * @return true f the iterator has more tuples.

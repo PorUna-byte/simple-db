@@ -15,8 +15,8 @@ import simpledb.transaction.TransactionId;
 
 public class LockingTest extends TestUtil.CreateHeapFile {
   private PageId p0;
-    private PageId p1;
-    private TransactionId tid1, tid2;
+  private PageId p1;
+  private TransactionId tid1, tid2;
 
   /** Time to wait before checking the state of lock contention, in ms */
   private static final int TIMEOUT = 100;

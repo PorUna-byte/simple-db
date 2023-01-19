@@ -1,11 +1,15 @@
 package simpledb.optimizer;
-
 import simpledb.execution.Predicate;
 
 /** A class to represent a fixed-width histogram over a single integer-based field.
  */
-public class IntHistogram {
-
+public class IntHistogram implements Histogram{
+    private final int buckets;
+    private final int min;
+    private final int max;
+    private int total;
+    private final int[] histogram;
+    private int width;
     /**
      * Create a new IntHistogram.
      * 
@@ -24,6 +28,14 @@ public class IntHistogram {
      */
     public IntHistogram(int buckets, int min, int max) {
     	// some code goes here
+        this.buckets = Math.min(max-min+1,buckets);
+        this.min     = min;
+        this.max     = max;
+        this.total   = 0;
+        this.histogram = new int[this.buckets];
+        this.width = (max+1-min)/this.buckets ;
+        for(int i=0;i<this.buckets;i++)
+            histogram[i]=0;
     }
 
     /**
@@ -32,6 +44,15 @@ public class IntHistogram {
      */
     public void addValue(int v) {
     	// some code goes here
+        if(v>max||v<min)
+            return;
+        total++;
+
+        int idx=Math.min((int)(((float)(v-min)*buckets)/((float)max-(float)min+1)),buckets-1);
+        if(idx==-1){
+            System.out.println("idx="+idx+", min="+min+",max="+max+"v="+v);
+        }
+        histogram[idx]++;
     }
 
     /**
@@ -45,7 +66,48 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
-
+//        EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, NOT_EQUALS;
+        int idx=Math.min((int)(((float)(v-min)*buckets)/((float)max-(float)min+1)),buckets-1);
+        if(v>max){
+            if(op==Predicate.Op.LESS_THAN||op== Predicate.Op.LESS_THAN_OR_EQ||op== Predicate.Op.NOT_EQUALS)
+                return 1.0;
+            else
+                return 0.0;
+        }else if(v<min){
+            if(op==Predicate.Op.LESS_THAN||op== Predicate.Op.LESS_THAN_OR_EQ||op== Predicate.Op.EQUALS)
+                return 0.0;
+            else
+                return 1.0;
+        }
+        float sum=0;
+        switch (op){
+            case EQUALS:
+                return ((float)histogram[idx]/width)/total;
+            case GREATER_THAN:
+            case GREATER_THAN_OR_EQ:
+                //The right boarder of current histogram
+                int rightb=min+(idx+1)*width-1;
+                sum = (float)(rightb-v)/width*histogram[idx];
+                //Add all right histogram
+                for(int i=idx+1;i<buckets;i++)
+                    sum+=histogram[i];
+                //deal with equal case
+                sum += (op== Predicate.Op.GREATER_THAN_OR_EQ)?(float)(histogram[idx]/width):0;
+                return sum/total;
+            case LESS_THAN:
+            case LESS_THAN_OR_EQ:
+                //The left boarder of current histogram
+                int leftb=min+idx*width;
+                sum = (float)(v-leftb)/width*histogram[idx];
+                //Add all left histogram
+                for(int i=0;i<idx;i++)
+                    sum+=histogram[i];
+                //deal with equal case
+                sum += (op== Predicate.Op.LESS_THAN_OR_EQ)?(float)(histogram[idx]/width):0;
+                return sum/total;
+            case NOT_EQUALS:
+                return 1-((float)histogram[idx]/width)/total;
+        }
     	// some code goes here
         return -1.0;
     }
@@ -61,6 +123,7 @@ public class IntHistogram {
     public double avgSelectivity()
     {
         // some code goes here
+
         return 1.0;
     }
     
@@ -69,6 +132,11 @@ public class IntHistogram {
      */
     public String toString() {
         // some code goes here
-        return null;
+        StringBuilder sb=new StringBuilder();
+        for(int i=0;i<buckets;i++){
+            sb.append("[").append(min + i * width).append(",").
+                    append(min + ((i + 1) * width)).append(")-->").append((float) histogram[i] / total).append("\n");
+        }
+        return sb.toString();
     }
 }

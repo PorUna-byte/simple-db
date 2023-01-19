@@ -18,6 +18,7 @@ import simpledb.execution.Delete;
 import simpledb.execution.Insert;
 import simpledb.execution.Query;
 import simpledb.execution.SeqScan;
+import simpledb.lab4test.AbortEvictionTest;
 import simpledb.storage.*;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
@@ -141,7 +142,6 @@ public class TransactionTest extends SimpleDbTestBase {
                         q3.start();
                         q3.next();
                         q3.close();
-
                         tr.commit();
                         break;
                     } catch (TransactionAbortedException te) {

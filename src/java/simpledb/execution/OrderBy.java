@@ -6,6 +6,7 @@ import simpledb.storage.Field;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 
+import java.io.IOException;
 import java.util.*;
 
 /**

@@ -130,7 +130,9 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            //*joincost(t1 join t2) = scancost(t1) + ntups(t1) x scancost(t2) //IO cost
+            //                       + ntups(t1) x ntups(t2)  //CPU cost
+            return cost1+card1*cost2+card1*card2;
         }
     }
 
@@ -176,6 +178,15 @@ public class JoinOptimizer {
                                                    Map<String, Integer> tableAliasToId) {
         int card = 1;
         // some code goes here
+        if(t1pkey&&t2pkey){
+            card=(int)(card1*card2*0.3);
+        }else if(t1pkey&&!t2pkey){
+            card=card2;
+        }else if(!t1pkey&&t2pkey){
+            card=card1;
+        }else {
+            card=Math.max(card1,card2);
+        }
         return card <= 0 ? 1 : card;
     }
 
@@ -235,10 +246,29 @@ public class JoinOptimizer {
             Map<String, TableStats> stats,
             Map<String, Double> filterSelectivities, boolean explain)
             throws ParsingException {
-
         // some code goes here
+        PlanCache pc=new PlanCache();
+        for(int i=1;i<=joins.size();i++){
+            for(Set<LogicalJoinNode> s:enumerateSubsets(joins,i)){
+                List<LogicalJoinNode> bestplan=null;
+                double bestcost=Double.MAX_VALUE;
+                int bestcard=0;
+                for(LogicalJoinNode ToRemove:s){
+                    CostCard costCard=computeCostAndCardOfSubplan(stats,filterSelectivities,ToRemove,s,bestcost,pc);
+                    if(costCard!=null&&costCard.cost<bestcost) {
+                        bestplan = costCard.plan;
+                        bestcard = costCard.card;
+                        bestcost = costCard.cost;
+                    }
+                }
+                pc.addPlan(s,bestcost,bestcard,bestplan);
+            }
+        }
         //Replace the following
-        return joins;
+        List<LogicalJoinNode> ans=pc.getOrder(new HashSet<>(joins))==null?joins:pc.getOrder(new HashSet<>(joins));
+//        if(explain)
+            printJoins(ans,pc,stats,filterSelectivities);
+        return ans;
     }
 
     // ===================== Private Methods =================================

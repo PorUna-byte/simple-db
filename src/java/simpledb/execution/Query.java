@@ -99,7 +99,7 @@ public class Query implements Serializable {
         started = false;
     }
 
-    public void execute() throws DbException, TransactionAbortedException {
+    public void execute() throws DbException, TransactionAbortedException, IOException {
         TupleDesc td = this.getOutputTupleDesc();
 
         StringBuilder names = new StringBuilder();

@@ -288,7 +288,7 @@ public class LogTest extends SimpleDbTestBase {
         // *** Test:
         // T1 inserts and commits
         // T2 inserts but aborts
-        // T3 inserts and commit
+        // T3 inserts and commits
         // only T1 and T3 data should be there
 
         doInsert(hf1, 5, -1);

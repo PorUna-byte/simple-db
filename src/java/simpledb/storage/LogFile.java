@@ -456,14 +456,47 @@ public class LogFile {
     */
     public void rollback(TransactionId tid)
         throws NoSuchElementException, IOException {
+        rollback(tid.getId());
+    }
+    //we should perform rollback in Reverse order!!!
+    //NOT Forward order.
+    public void rollback(long tid)
+            throws NoSuchElementException, IOException {
         synchronized (Database.getBufferPool()) {
             synchronized(this) {
                 preAppend();
-                // some code goes here
+                raf.seek(raf.length()-8);
+                while(raf.getFilePointer()>tidToFirstLogRecord.get(tid)){
+                    long offset=raf.readLong();
+                    raf.seek(offset);
+
+                    int type=raf.readInt();
+                    switch (type){
+                        case BEGIN_RECORD:
+                            if(raf.readLong()==tid)
+                                return;
+                        case COMMIT_RECORD:
+                        case ABORT_RECORD:
+                        case CHECKPOINT_RECORD:
+                            raf.seek(offset-8);
+                            break;
+                        case UPDATE_RECORD:
+                            long tidno= raf.readLong();
+                            //we need to do roll-back for this updated record
+                            if(tidno==tid) {
+                                Page before=readPageData(raf);
+                                Page after=readPageData(raf);
+                                DbFile dbFile = Database.getCatalog().getDatabaseFile(before.getId().getTableId());
+                                dbFile.writePage(before);
+                                Database.getBufferPool().discardPage(before.getId());
+                            }
+                            raf.seek(offset-8);
+                            break;
+                    }
+                }
             }
         }
     }
-
     /** Shutdown the logging system, writing out whatever state
         is necessary so that start up can happen quickly (without
         extensive recovery.)
@@ -482,11 +515,54 @@ public class LogFile {
         committed transactions are installed and that the
         updates of uncommitted transactions are not installed.
     */
+    //We scan from checkpoint (if any) forward!
     public void recover() throws IOException {
         synchronized (Database.getBufferPool()) {
             synchronized (this) {
                 recoveryUndecided = false;
                 // some code goes here
+                raf.seek(0);
+                long last_cp= raf.readLong();
+                if(last_cp!=-1){
+                    //we have checkpoint, start from that checkpoint
+                    raf.seek(last_cp);
+                    raf.readInt();
+                    raf.readLong();
+                    int size=raf.readInt();
+                    for(int i=0;i<size;i++)
+                        tidToFirstLogRecord.put(raf.readLong(), raf.readLong());
+                    raf.readLong();
+                }
+                while(raf.getFilePointer()<raf.length()){
+                    int type=raf.readInt();
+                    switch (type){
+                        case BEGIN_RECORD:
+                            tidToFirstLogRecord.put(raf.readLong(), raf.readLong());
+                            break;
+                        case COMMIT_RECORD:
+                            tidToFirstLogRecord.remove(raf.readLong());
+                            raf.readLong();
+                            break;
+                        case ABORT_RECORD:
+                            raf.readLong();
+                            raf.readLong();
+                            break;
+                        case UPDATE_RECORD:
+                            long tidno= raf.readLong();
+                            //we need to do re-do for this updated record
+                            Page before=readPageData(raf);
+                            Page after=readPageData(raf);
+                            raf.readLong();
+                            DbFile dbFile = Database.getCatalog().getDatabaseFile(after.getId().getTableId());
+                            dbFile.writePage(after);
+                            break;
+                            //case CHECKPOINT_RECORD is impossible,since we start from last checkpoint :)
+                    }
+                }
+                //Un-do the updates of loser transactions.
+                for(long tid:tidToFirstLogRecord.keySet()){
+                    rollback(tid);
+                }
             }
          }
     }
